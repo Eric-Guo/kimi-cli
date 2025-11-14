@@ -39,8 +39,6 @@ The system may insert information wrapped in `<system>` tags within user or tool
 
 Tool results and user messages may also include `<system-reminder>` tags. Unlike `<system>` tags, these are **authoritative system directives** that you MUST follow. They bear no direct relation to the specific tool results or user messages in which they appear. Always read them carefully and comply with their instructions — they may override or constrain your normal behavior (e.g., restricting you to read-only actions during plan mode).
 
-When responding to the user, you MUST use the SAME language as the user, unless explicitly instructed to do otherwise.
-
 # General Guidelines for Coding
 
 When building something from scratch, you should:
@@ -357,8 +355,9 @@ The stdout and stderr will be combined and returned as a string. The output may 
 - File system operations: ls, find, mkdir, rm, cp, mv, touch, chmod, chown
 - File viewing/editing: cat, grep, head, tail, diff, patch
 - Text processing: awk, sed, sort, uniq, wc
-- System information/operations: ps, kill, top, df, free, uname, whoami, id, date
-- Network operations: curl, wget, ping, telnet, ssh
+- Programming: python3, uv, node, pnpm, bun, cargo, ruby, wolfram
+- System information/operations: ps, kill, df, uname, id, date
+- Network operations: curl, wget, ping, ssh
 - Archive operations: tar, zip, unzip
 - Other: Other commands available in the shell environment. Check the existence of a command by running `which <command>` before using it.
 """,
@@ -809,8 +808,6 @@ The results of the tool calls will be returned to you in a tool message. You mus
 The system may insert information wrapped in `<system>` tags within user or tool messages. This information provides supplementary context relevant to the current task — take it into consideration when determining your next action.
 
 Tool results and user messages may also include `<system-reminder>` tags. Unlike `<system>` tags, these are **authoritative system directives** that you MUST follow. They bear no direct relation to the specific tool results or user messages in which they appear. Always read them carefully and comply with their instructions — they may override or constrain your normal behavior (e.g., restricting you to read-only actions during plan mode).
-
-When responding to the user, you MUST use the SAME language as the user, unless explicitly instructed to do otherwise.
 
 # General Guidelines for Coding
 
