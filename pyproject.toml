@@ -9,7 +9,7 @@ dependencies = [
     "aiofiles==25.1.0",
     "aiohttp==3.13.2",
     "typer==0.20.0",
-    "kosong[contrib]==0.33.0",
+    "kosong @ file:///Users/guochunzhong/git/oss/kosong",
     "loguru==0.7.3",
     "prompt-toolkit==3.0.52",
     "pillow==12.0.0",
@@ -22,7 +22,7 @@ dependencies = [
     "fastmcp==2.12.5",
     "pydantic==2.12.5",
     "httpx[socks]==0.28.1",
-    "pykaos==0.5.0",
+    "pykaos @ file:///Users/guochunzhong/git/oss/pykaos",
 ]
 
 [dependency-groups]
