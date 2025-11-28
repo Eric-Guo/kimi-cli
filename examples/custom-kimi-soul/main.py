@@ -94,8 +94,8 @@ async def main():
             ),
             LLMModel(
                 provider="kimi",
-                model="kimi-k2-turbo-preview",
-                max_context_size=250_000,
+                model="kimi-for-coding",
+                max_context_size=262144,
             ),
         ),
         system_prompt="You are Hakimi, an AI assistant that helps users with various tasks.",
