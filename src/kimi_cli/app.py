@@ -10,10 +10,10 @@ from collections.abc import AsyncGenerator, Callable
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-import kaos
 from kaos.path import KaosPath
 from pydantic import SecretStr
 
+import kaos
 from kimi_cli.agentspec import DEFAULT_AGENT_FILE
 from kimi_cli.auth.oauth import KIMI_CODE_OAUTH_KEY, OAuthManager, get_device_id
 from kimi_cli.background.models import is_terminal_status
