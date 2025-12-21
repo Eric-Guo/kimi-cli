@@ -177,6 +177,13 @@ def kimi(
             help="User prompt to the agent. Default: prompt interactively.",
         ),
     ] = None,
+    search: Annotated[
+        str | None,
+        typer.Option(
+            "--search",
+            help="Search the web with a query, print results, and exit.",
+        ),
+    ] = None,    
     print_mode: Annotated[
         bool,
         typer.Option(
@@ -351,6 +358,89 @@ def kimi(
                 stream.flush()
                 return
         typer.echo(message, err=True)
+
+    if search is not None:
+        search = search.strip()
+        if not search:
+            raise typer.BadParameter("Search query cannot be empty", param_hint="--search")
+        if command is not None or print_mode or acp_mode or wire_mode:
+            raise typer.BadParameter(
+                "Cannot combine --search with --command/--print/--acp/--wire.",
+                param_hint="--search",
+            )
+
+        if agent is not None and agent_file is None:
+            match agent:
+                case "default":
+                    agent_file = DEFAULT_AGENT_FILE
+                case "okabe":
+                    agent_file = OKABE_AGENT_FILE
+
+        from kosong.message import ToolCall
+        from kosong.tooling import ToolResult
+
+        from kimi_cli.soul import RunCancelled
+
+        async def _run_search() -> bool:
+            work_dir = (
+                KaosPath.unsafe_from_local_path(local_work_dir)
+                if local_work_dir
+                else KaosPath.cwd()
+            )
+            session = await Session.create(work_dir)
+            try:
+                instance = await KimiCLI.create(
+                    session,
+                    yolo=True,
+                    mcp_configs=[],
+                    model_name=model_name,
+                    thinking=False,
+                    agent_file=agent_file,
+                )
+
+                cancel_event = asyncio.Event()
+                search_call_id: str | None = None
+                search_result = None
+
+                prompt = (
+                    "Use the SearchWeb tool to search the web for the following query. "
+                    "Do not add commentary. Query: "
+                    f"{search}"
+                )
+
+                try:
+                    async for msg in instance.run(prompt, cancel_event):
+                        if isinstance(msg, ToolCall) and msg.function.name == "SearchWeb":
+                            search_call_id = msg.id
+                        elif (
+                            isinstance(msg, ToolResult)
+                            and search_call_id
+                            and msg.tool_call_id == search_call_id
+                        ):
+                            search_result = msg.return_value
+                            cancel_event.set()
+                except RunCancelled:
+                    pass
+                except Exception as e:
+                    typer.echo(f"Search failed: {e}", err=True)
+                    return False
+
+                if search_result is None:
+                    typer.echo("Search did not return any results.", err=True)
+                    return False
+
+                if search_result.output:
+                    typer.echo(search_result.output, nl=False)
+                if search_result.message:
+                    typer.echo(search_result.message, err=search_result.is_error)
+                return not search_result.is_error
+            finally:
+                await session.delete()
+
+        succeeded = asyncio.run(_run_search())
+        if not succeeded:
+            raise typer.Exit(code=1)
+        raise typer.Exit()
 
     if session_id is not None:
         session_id = session_id.strip()
