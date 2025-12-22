@@ -183,7 +183,18 @@ def kimi(
             "--search",
             help="Search the web with a query, print results, and exit.",
         ),
-    ] = None,    
+    ] = None,
+    search_call_id_only: Annotated[
+        bool,
+        typer.Option(
+            "--search-call-id",
+            "--search_call_id",
+            help=(
+                "Use with --search to return the SearchWeb tool call ID directly "
+                "without invoking the tool."
+            ),
+        ),
+    ] = False,
     print_mode: Annotated[
         bool,
         typer.Option(
@@ -359,6 +370,12 @@ def kimi(
                 return
         typer.echo(message, err=True)
 
+    if search_call_id_only and search is None:
+        raise typer.BadParameter(
+            "--search-call-id must be used together with --search.",
+            param_hint="--search-call-id",
+        )
+
     if search is not None:
         search = search.strip()
         if not search:
@@ -388,6 +405,8 @@ def kimi(
                 else KaosPath.cwd()
             )
             session = await Session.create(work_dir)
+            toolset = None
+            original_handle = None
             try:
                 instance = await KimiCLI.create(
                     session,
@@ -397,9 +416,25 @@ def kimi(
                     thinking=False,
                     agent_file=agent_file,
                 )
+                if search_call_id_only:
+                    from kimi_cli.tools.utils import ToolRejectedError
+
+                    toolset = instance.soul.agent.toolset
+                    original_handle = toolset.handle
+
+                    def _handle(tool_call: ToolCall):
+                        if tool_call.function.name == "SearchWeb":
+                            return ToolResult(
+                                tool_call_id=tool_call.id,
+                                return_value=ToolRejectedError(),
+                            )
+                        return original_handle(tool_call)
+
+                    # Avoid executing SearchWeb when only the tool call ID is needed.
+                    toolset.handle = _handle  # type: ignore[assignment]
 
                 cancel_event = asyncio.Event()
-                search_call_id: str | None = None
+                search_tool_call_id: str | None = None
                 search_result = None
 
                 prompt = (
@@ -411,11 +446,13 @@ def kimi(
                 try:
                     async for msg in instance.run(prompt, cancel_event):
                         if isinstance(msg, ToolCall) and msg.function.name == "SearchWeb":
-                            search_call_id = msg.id
+                            search_tool_call_id = msg.id
+                            if search_call_id_only:
+                                cancel_event.set()
                         elif (
                             isinstance(msg, ToolResult)
-                            and search_call_id
-                            and msg.tool_call_id == search_call_id
+                            and search_tool_call_id
+                            and msg.tool_call_id == search_tool_call_id
                         ):
                             search_result = msg.return_value
                             cancel_event.set()
@@ -424,6 +461,13 @@ def kimi(
                 except Exception as e:
                     typer.echo(f"Search failed: {e}", err=True)
                     return False
+
+                if search_call_id_only:
+                    if search_tool_call_id is None:
+                        typer.echo("Search did not return a tool call ID.", err=True)
+                        return False
+                    typer.echo(search_tool_call_id, nl=False)
+                    return True
 
                 if search_result is None:
                     typer.echo("Search did not return any results.", err=True)
@@ -435,6 +479,8 @@ def kimi(
                     typer.echo(search_result.message, err=search_result.is_error)
                 return not search_result.is_error
             finally:
+                if toolset is not None and original_handle is not None:
+                    toolset.handle = original_handle  # type: ignore[assignment]
                 await session.delete()
 
         succeeded = asyncio.run(_run_search())
