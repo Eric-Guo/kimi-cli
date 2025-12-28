@@ -14,7 +14,7 @@ from kimi_cli.tools.utils import ToolRejectedError, ToolResultBuilder, load_desc
 from kimi_cli.utils.environment import Environment
 from kimi_cli.utils.subprocess_env import get_clean_env
 
-MAX_TIMEOUT = 5 * 60
+MAX_TIMEOUT = 10 * 60
 
 
 class Params(BaseModel):
@@ -24,7 +24,7 @@ class Params(BaseModel):
             "The timeout in seconds for the command to execute. "
             "If the command takes longer than this, it will be killed."
         ),
-        default=60,
+        default=600,
         ge=1,
         le=MAX_TIMEOUT,
     )
