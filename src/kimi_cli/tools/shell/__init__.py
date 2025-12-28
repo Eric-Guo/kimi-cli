@@ -18,7 +18,7 @@ from kimi_cli.utils.environment import Environment
 from kimi_cli.utils.logging import logger
 from kimi_cli.utils.subprocess_env import get_noninteractive_env
 
-MAX_FOREGROUND_TIMEOUT = 5 * 60
+MAX_FOREGROUND_TIMEOUT = 10 * 60
 MAX_BACKGROUND_TIMEOUT = 24 * 60 * 60
 
 
@@ -29,7 +29,7 @@ class Params(BaseModel):
             "The timeout in seconds for the command to execute. "
             "If the command takes longer than this, it will be killed."
         ),
-        default=60,
+        default=600,
         ge=1,
         le=MAX_BACKGROUND_TIMEOUT,
     )
